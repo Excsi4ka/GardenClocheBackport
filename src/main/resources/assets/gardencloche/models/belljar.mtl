@@ -1,0 +1,5 @@
+# Made in Blockbench 4.12.2
+newmtl m_ff78120d-ef96-5d7a-1d97-d9fa909987a6
+map_Kd textureCloche.png
+newmtl farmland
+map_Kd treatedWood_vertical.png

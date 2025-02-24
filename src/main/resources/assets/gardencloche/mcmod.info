@@ -1,0 +1,16 @@
+[
+{
+  "modid": "gardencloche",
+  "name": "GardenClocheBackport",
+  "description": "A port of immersive engineering's garden cloche to 1.7.10",
+  "version": "1.0-[BETA]",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Excsi"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
