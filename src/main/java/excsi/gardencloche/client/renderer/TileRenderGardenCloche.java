@@ -1,12 +1,9 @@
 package excsi.gardencloche.client.renderer;
 
-import blusunrize.immersiveengineering.api.ComparableItemStack;
 import blusunrize.immersiveengineering.client.models.ModelIEObj;
 import blusunrize.immersiveengineering.client.render.TileRenderIE;
 import blusunrize.immersiveengineering.common.util.chickenbones.Matrix4;
-import excsi.gardencloche.api.handlers.AbstractPlantHandler;
 import excsi.gardencloche.common.CommonProxy;
-import excsi.gardencloche.api.GardenClocheRegistry;
 import excsi.gardencloche.common.tile.TileGardenCloche;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderBlocks;
@@ -31,7 +28,7 @@ public class TileRenderGardenCloche extends TileRenderIE {
     public IModelCustom modelSoil;
 
     public TileRenderGardenCloche() {
-        modelSoil = AdvancedModelLoader.loadModel(new ResourceLocation("gardencloche:models/soil.obj"));
+        modelSoil =  AdvancedModelLoader.loadModel(new ResourceLocation("gardencloche:models/soil.obj"));
     }
 
     @Override
@@ -39,21 +36,20 @@ public class TileRenderGardenCloche extends TileRenderIE {
         TileGardenCloche tile = (TileGardenCloche) tileEntity;
         if(tile.isDummy)
             return;
-        if(Minecraft.getMinecraft().thePlayer.getDistance(tile.xCoord,tile.yCoord,tile.zCoord)>64)
+        if(Minecraft.getMinecraft().thePlayer.getDistance(tile.xCoord,tile.yCoord,tile.zCoord)>48)
             return;
-        if(tile.inventory[2] != null) {
+        if(tile.currentTextureWrapper != null) {
             GL11.glPushMatrix();
             GL11.glTranslatef(0.5f, 0.95f, 0.5f);
             GL11.glTranslated(x, y, z);
-            ResourceLocation rl = GardenClocheRegistry.soilTextureMap.get(new ComparableItemStack(tile.inventory[2]));
+            ResourceLocation rl = tile.currentTextureWrapper.texture;
             Minecraft.getMinecraft().renderEngine.bindTexture(rl);
             modelSoil.renderAll();
             GL11.glPopMatrix();
         }
-        AbstractPlantHandler handler = GardenClocheRegistry.getPlantHandler(tile.inventory[1]);
-        if(handler==null)
+        if(tile.currentHandler == null || tile.getBlockType() == null)
             return;
-        handler.render(tile,x,y,z, tile.growth,renderBlocks);
+        tile.currentHandler.render(tile,x,y,z, tile.growth,renderBlocks);
     }
 
     @Override

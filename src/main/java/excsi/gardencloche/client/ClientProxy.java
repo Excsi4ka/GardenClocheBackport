@@ -24,8 +24,8 @@ public class ClientProxy extends CommonProxy {
     }
 
     @Override
-    public void init(FMLInitializationEvent event) {
-        super.init(event);
+    public void initHandlers(FMLInitializationEvent event) {
+        super.initHandlers(event);
         clocheRenderID = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new BlockRendererGardenCloche());
         rendererReference = new TileRenderGardenCloche();

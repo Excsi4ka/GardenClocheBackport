@@ -12,7 +12,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
 import net.minecraft.client.renderer.texture.IIconRegister;
-import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 
@@ -50,21 +49,13 @@ public class BlockGardenCloche extends BlockContainer {
     @Override
     public void breakBlock(World world, int x, int y, int z, Block block, int p_149749_6_) {
         TileGardenCloche thisTile = (TileGardenCloche) world.getTileEntity(x,y,z);
+        int firstOffset = thisTile.pos == 0 ?  1 : thisTile.pos == 1 ? -1 : -2;
+        int secondOffset = thisTile.pos == 0 ?  2 : thisTile.pos == 1 ? 1 : -1;
         if(thisTile != null && !world.isRemote) {
-            TileGardenCloche main = thisTile.mainTile();
-            if (!world.isAirBlock(x, y + thisTile.partOneOffset, z))
-                world.setBlockToAir(x, y + thisTile.partOneOffset, z);
-            if (!world.isAirBlock(x, y + thisTile.partTwoOffset, z))
-                world.setBlockToAir(x, y + thisTile.partTwoOffset, z);
-
-            for(int i = 0; i < main.inventory.length; i++) {
-                if(main.inventory[i]!=null) {
-                    EntityItem item = new EntityItem(main.getWorldObj(),main.xCoord+Math.random(),main.yCoord+Math.random()+0.1,main.zCoord+Math.random());
-                    item.setEntityItemStack(main.inventory[i]);
-                    item.delayBeforeCanPickup = 10;
-                    main.getWorldObj().spawnEntityInWorld(item);
-                }
-            }
+            if (!world.isAirBlock(x, y + firstOffset, z))
+                world.setBlockToAir(x, y + firstOffset, z);
+            if (!world.isAirBlock(x, y + secondOffset, z))
+                world.setBlockToAir(x, y + secondOffset, z);
         }
         super.breakBlock(world, x, y, z, block, p_149749_6_);
     }

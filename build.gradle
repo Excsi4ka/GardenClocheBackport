@@ -14,10 +14,13 @@ buildscript {
 }
 
 apply plugin: 'forge'
+apply plugin: 'java'
 
 version = "1.0[BETA]"
 group= "excsi.gardencloche" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "GardenClocheBackport"
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 minecraft {
     version = "1.7.10-10.13.4.1614-1.7.10"

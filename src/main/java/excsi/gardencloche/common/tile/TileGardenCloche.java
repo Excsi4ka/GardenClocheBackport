@@ -9,7 +9,9 @@ import cpw.mods.fml.relauncher.SideOnly;
 import excsi.gardencloche.api.GardenClocheRegistry;
 import excsi.gardencloche.api.handlers.AbstractPlantHandler;
 import excsi.gardencloche.api.handlers.IFertilizerHandler;
+import excsi.gardencloche.api.handlers.SoilTextureWrapper;
 import excsi.gardencloche.common.Config;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.inventory.ISidedInventory;
@@ -21,7 +23,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.*;
 import net.minecraftforge.oredict.OreDictionary;
 
-public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceiver, IFluidHandler, ISidedInventory {
+public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceiver, IFluidHandler, IInventory {
 
     public EnergyStorage energyStorage = new EnergyStorage(16000);
 
@@ -29,21 +31,17 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
 
     public boolean isDummy = true;
 
-    public byte partOneOffset = 0;
-
-    public byte partTwoOffset = 0;
-
-    public byte pos = 0;
-
-    public byte facingSide = 0;
+    public byte pos = 0, facingSide = 0;
 
     public ItemStack[] inventory = new ItemStack[7];
 
-    public float growth = 0;
-
     public int fertilizerAmount = 0;
 
-    public float fertilizerBoost = 1;
+    public float growth = 0, fertilizerBoost = 1;
+
+    public AbstractPlantHandler currentHandler;
+
+    public SoilTextureWrapper currentTextureWrapper;
 
     public TileGardenCloche() {}
 
@@ -55,17 +53,28 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
     public void updateEntity() {
         if(this.isDummy)
             return;
-        AbstractPlantHandler handler = GardenClocheRegistry.getPlantHandler(inventory[1]);
-        if(handler==null)
-            return;
         boolean needsSync = false;
         boolean consume = false;
+
+        if(currentHandler == null || !currentHandler.isValidSeed(inventory[1])) {
+            currentHandler = GardenClocheRegistry.getPlantHandlerFromStack(inventory[1]);
+        }
+
+        if(currentTextureWrapper == null || !currentTextureWrapper.matches(inventory[2])) {
+            currentTextureWrapper = GardenClocheRegistry.getSoilTextureFromStack(inventory[2]);
+        }
+
+        if(currentHandler == null)
+            return;
+
+        currentHandler.tick(this);
+
         if(worldObj.isRemote) {
             if(energyStorage.getEnergyStored()>Config.clocheEnergyConsumption && fertilizerAmount>0) {
                 if (worldObj.rand.nextInt(8) == 0) {
-                    double partX = xCoord + .5;
+                    double partX = xCoord + 0.5;
                     double partY = yCoord + 2.6875;
-                    double partZ = zCoord + .5;
+                    double partZ = zCoord + 0.5;
                     worldObj.spawnParticle("reddust", partX, partY, partZ, 0, 0, 0);
                 }
             }
@@ -74,7 +83,7 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
                 tank.drain(Config.clocheFluidConsumption,true);
                 needsSync = true;
                 if(inventory[0] != null && GardenClocheRegistry.isValidFertilizer(inventory[0])) {
-                    IFertilizerHandler fertilizerHandler = GardenClocheRegistry.getFertilizerHandler(inventory[0]);
+                    IFertilizerHandler fertilizerHandler = GardenClocheRegistry.getFertilizerHandlerFromStack(inventory[0]);
                     fertilizerBoost = fertilizerHandler.getGrowthMultiplier();
                     inventory[0].stackSize--;
                     if(inventory[0].stackSize<=0) {
@@ -83,9 +92,9 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
                 }
                 fertilizerAmount = Config.fertilizerAmount;
             }
-            if(handler.isValidSoil(inventory[2]) && energyStorage.extractEnergy(Config.clocheEnergyConsumption,true) == Config.clocheEnergyConsumption && fertilizerAmount > 0) {
+            if(currentHandler.isValidSoil(inventory[2]) && energyStorage.extractEnergy(Config.clocheEnergyConsumption,true) == Config.clocheEnergyConsumption && fertilizerAmount > 0) {
                 if(growth>=1 && !outputSlotsFull()) {
-                    ItemStack[] outputs = handler.getOutputs(this,inventory[0]);
+                    ItemStack[] outputs = currentHandler.getOutputs(this,inventory[0]);
                     for (int j = 0; j < outputs.length; j++) {
                         for(int i = 3; i < 7; i++) {
                             if(inventory[i] == null) {
@@ -109,7 +118,7 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
                     growth = 0;
                 }else {
                     if(!outputSlotsFull()) {
-                        growth = handler.getGrowthStep(this, fertilizerBoost, growth);
+                        growth = currentHandler.getGrowthStep(this, fertilizerBoost, growth);
                         consume = true;
                         needsSync = true;
                     }
@@ -136,7 +145,6 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
             if(consume) {
                 fertilizerAmount--;
                 energyStorage.extractEnergy(Config.clocheEnergyConsumption,false);
-                needsSync = true;
             }
             if(needsSync) {
                 worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
@@ -145,33 +153,33 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
     }
 
     @Override
-    public void readCustomNBT(NBTTagCompound nbtTagCompound, boolean b) {
+    public void readCustomNBT(NBTTagCompound nbtTagCompound, boolean dataPacket) {
         isDummy = nbtTagCompound.getBoolean("dummy");
-        partOneOffset = nbtTagCompound.getByte("PartOneOffset");
-        partTwoOffset = nbtTagCompound.getByte("PartTwoOffset");
         pos = nbtTagCompound.getByte("MultiblockPos");
         facingSide = nbtTagCompound.getByte("Facing");
-        fertilizerAmount = nbtTagCompound.getInteger("FertilizerAmount");
-        fertilizerBoost = nbtTagCompound.getFloat("FertilizerBoost");
-        growth = nbtTagCompound.getFloat("Growth");
-        energyStorage.readFromNBT(nbtTagCompound);
-        tank.readFromNBT(nbtTagCompound);
-        inventory = Utils.readInventory(nbtTagCompound.getTagList("inventory", 10), 7);
+        if (!isDummy) {
+            fertilizerAmount = nbtTagCompound.getInteger("FertilizerAmount");
+            fertilizerBoost = nbtTagCompound.getFloat("FertilizerBoost");
+            growth = nbtTagCompound.getFloat("Growth");
+            energyStorage.readFromNBT(nbtTagCompound);
+            tank.readFromNBT(nbtTagCompound);
+            inventory = Utils.readInventory(nbtTagCompound.getTagList("inventory", 10), 7);
+        }
     }
 
     @Override
-    public void writeCustomNBT(NBTTagCompound nbtTagCompound, boolean b) {
-        nbtTagCompound.setBoolean("dummy",isDummy);
-        nbtTagCompound.setByte("PartOneOffset",partOneOffset);
-        nbtTagCompound.setByte("PartTwoOffset",partTwoOffset);
-        nbtTagCompound.setByte("MultiblockPos",pos);
-        nbtTagCompound.setByte("Facing",facingSide);
-        nbtTagCompound.setInteger("FertilizerAmount",fertilizerAmount);
-        nbtTagCompound.setFloat("FertilizerBoost",fertilizerBoost);
-        nbtTagCompound.setFloat("Growth",growth);
-        energyStorage.writeToNBT(nbtTagCompound);
-        tank.writeToNBT(nbtTagCompound);
-        nbtTagCompound.setTag("inventory", Utils.writeInventory(this.inventory));
+    public void writeCustomNBT(NBTTagCompound nbtTagCompound, boolean dataPacket) {
+        nbtTagCompound.setBoolean("dummy", isDummy);
+        nbtTagCompound.setByte("MultiblockPos", pos);
+        nbtTagCompound.setByte("Facing", facingSide);
+        if (!isDummy) {
+            nbtTagCompound.setInteger("FertilizerAmount", fertilizerAmount);
+            nbtTagCompound.setFloat("FertilizerBoost", fertilizerBoost);
+            nbtTagCompound.setFloat("Growth", growth);
+            energyStorage.writeToNBT(nbtTagCompound);
+            tank.writeToNBT(nbtTagCompound);
+            nbtTagCompound.setTag("inventory", Utils.writeInventory(inventory));
+        }
     }
 
     public boolean outputSlotsFull() {
@@ -191,8 +199,7 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
             return mainTile().receiveEnergy(forgeDirection,i, b);
         } else {
             int energy = energyStorage.receiveEnergy(i,b);
-            if(energy>0) {
-                markDirty();
+            if(energy > 0) {
                 worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
             }
             return energy;
@@ -208,6 +215,21 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
     }
 
     @Override
+    public void invalidate() {
+        super.invalidate();
+        if(isDummy || worldObj.isRemote)
+            return;
+        for (ItemStack stack : inventory) {
+            if (stack != null) {
+                EntityItem item = new EntityItem(getWorldObj(), xCoord + Math.random(), yCoord + Math.random() + 0.1, zCoord + Math.random());
+                item.setEntityItemStack(stack);
+                item.delayBeforeCanPickup = 10;
+                getWorldObj().spawnEntityInWorld(item);
+            }
+        }
+    }
+
+    @Override
     public int getMaxEnergyStored(ForgeDirection forgeDirection) {
         if(this.isDummy)
             return mainTile().energyStorage.getMaxEnergyStored();
@@ -218,21 +240,6 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
     @Override
     public boolean canConnectEnergy(ForgeDirection forgeDirection) {
        return this.pos == 2 && forgeDirection == ForgeDirection.UP;
-    }
-
-    @Override
-    public int[] getAccessibleSlotsFromSide(int p_94128_1_) {
-        return new int[0];
-    }
-
-    @Override
-    public boolean canInsertItem(int p_102007_1_, ItemStack p_102007_2_, int p_102007_3_) {
-        return false;
-    }
-
-    @Override
-    public boolean canExtractItem(int p_102008_1_, ItemStack p_102008_2_, int p_102008_3_) {
-        return false;
     }
 
     @Override
@@ -266,7 +273,7 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
                     }
                 }
             }
-            this.markDirty();
+            markDirty();
             return stack;
         }
         return null;
@@ -320,10 +327,7 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
         if(slot > 2 && slot < 7) {
             return false;
         }
-        if(slot == 0 && !GardenClocheRegistry.isValidFertilizer(stack)) {
-            return false;
-        }
-        return true;
+        return slot != 0 || GardenClocheRegistry.isValidFertilizer(stack);
     }
 
     @Override
@@ -331,9 +335,8 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
         if(this.isDummy) {
             return 0;
         } else {
-             int filled = tank.fill(resource,true);
+             int filled = tank.fill(resource, doFill);
             if(filled > 0) {
-                markDirty();
                 worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
             }
             return filled;
@@ -381,23 +384,9 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
     @Override
     @SideOnly(Side.CLIENT)
     public AxisAlignedBB getRenderBoundingBox() {
+        //so rendering of crops doesn't stop when the lowest tile block is out of sight
+        if(!isDummy)
+            return AxisAlignedBB.getBoundingBox(xCoord,yCoord,zCoord,xCoord + 1,yCoord + 2,zCoord + 1);
         return super.getRenderBoundingBox();
-    }
-
-    public void setBase() {
-        partOneOffset = 1;
-        partTwoOffset = 2;
-    }
-
-    public void setMiddle() {
-        partOneOffset = -1;
-        partTwoOffset = 1;
-        pos = 1;
-    }
-
-    public void setTop() {
-        partOneOffset = -2;
-        partTwoOffset = -1;
-        pos = 2;
     }
 }

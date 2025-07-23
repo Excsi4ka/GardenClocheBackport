@@ -1,6 +1,5 @@
 package excsi.gardencloche.common.container;
 
-import blusunrize.immersiveengineering.api.ComparableItemStack;
 import excsi.gardencloche.api.GardenClocheRegistry;
 import excsi.gardencloche.common.tile.TileGardenCloche;
 import net.minecraft.entity.player.EntityPlayer;
@@ -58,7 +57,7 @@ public class ContainerGardenCloche extends Container {
 
         @Override
         public boolean isItemValid(ItemStack stack) {
-            return GardenClocheRegistry.soilTextureMap.containsKey(new ComparableItemStack(stack));
+            return GardenClocheRegistry.isSoilRegistered(stack);
         }
     }
 

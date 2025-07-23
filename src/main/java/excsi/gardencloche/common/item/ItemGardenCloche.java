@@ -28,15 +28,15 @@ public class ItemGardenCloche extends ItemBlock {
         } else {
             TileGardenCloche tileEntity = (TileGardenCloche) world.getTileEntity(x, y, z);
             tileEntity.isDummy = false;
-            tileEntity.setBase();
+            tileEntity.pos = 0;
             tileEntity.facingSide = f;
             world.setBlock(x,y+1,z, CommonProxy.gardenCloche,0,3);
             tileEntity = (TileGardenCloche) world.getTileEntity(x, y+1, z);
-            tileEntity.setMiddle();
+            tileEntity.pos = 1;
             tileEntity.facingSide = f;
             world.setBlock(x,y+2,z, CommonProxy.gardenCloche,0,3);
             tileEntity = (TileGardenCloche) world.getTileEntity(x, y+2, z);
-            tileEntity.setTop();
+            tileEntity.pos = 2;
             tileEntity.facingSide = f;
             return true;
         }

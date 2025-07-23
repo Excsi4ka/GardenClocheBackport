@@ -17,10 +17,10 @@ public class BlockRendererGardenCloche implements ISimpleBlockRenderingHandler {
 
     public static int renderPass = 0;
 
-    public static final TileGardenCloche charge = new TileGardenCloche();
+    public static final TileGardenCloche dummyTile = new TileGardenCloche();
 
     public BlockRendererGardenCloche(){
-        charge.facingSide = 2;
+        dummyTile.facingSide = 2;
     }
 
     @Override
@@ -32,9 +32,9 @@ public class BlockRendererGardenCloche implements ISimpleBlockRenderingHandler {
         GL11.glTranslatef(-0.5F, -0.5F, -0.5F);
         GL11.glScaled(0.5,0.5,0.5);
         renderPass = 0;
-        ClientUtils.handleStaticTileRenderer(charge);
+        ClientUtils.handleStaticTileRenderer(dummyTile);
         renderPass = 1;
-        ClientUtils.handleStaticTileRenderer(charge);
+        ClientUtils.handleStaticTileRenderer(dummyTile);
         Tessellator.instance.draw();
         GL11.glPopMatrix();
     }
