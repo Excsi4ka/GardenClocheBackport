@@ -55,7 +55,7 @@ public class CommonProxy implements IGuiHandler {
         GardenClocheRegistry.mapSoilToTexture("soulsandTex",new ItemStack(Item.getItemFromBlock(Blocks.soul_sand)), new ResourceLocation("textures/blocks/soul_sand.png"));
         GardenClocheRegistry.mapSoilToTexture("waterTex",new ItemStack(Items.water_bucket), new ResourceLocation("gardencloche:textures/blocks/water.png"));
 
-        GardenClocheRegistry.registerBasicFertilizer(new ItemStack(Items.dye,1,15),20.25f);
+        GardenClocheRegistry.registerBasicFertilizer(new ItemStack(Items.dye,1,15),0.25f);
 
         GardenClocheRegistry.registerDefaultCropHandler("wheatHandler",new ItemStack(Items.wheat_seeds),new ItemStack(Item.getItemFromBlock(Blocks.dirt)),
                 new ItemStack[]{new ItemStack(Items.wheat,2),new ItemStack(Items.wheat_seeds)},
