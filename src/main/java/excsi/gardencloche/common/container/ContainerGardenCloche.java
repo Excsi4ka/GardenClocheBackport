@@ -1,6 +1,6 @@
 package excsi.gardencloche.common.container;
 
-import excsi.gardencloche.api.GardenClocheRegistry;
+import excsi.gardencloche.common.registry.GardenClocheRegistry;
 import excsi.gardencloche.common.tile.TileGardenCloche;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;

@@ -1,7 +1,8 @@
-package excsi.gardencloche.api.handlers;
+package excsi.gardencloche.common.handlers;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import excsi.gardencloche.common.Config;
 import excsi.gardencloche.common.tile.TileGardenCloche;
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.RenderBlocks;
@@ -66,7 +67,7 @@ public abstract class AbstractPlantHandler {
     }
 
     public float getGrowthStep(TileGardenCloche cloche, float boost, float growth) {
-        return growth+0.01f*(1+boost);
+        return growth + Config.defaultGrowthSpeed * (1+boost);
     }
 
     @SideOnly(Side.CLIENT)

@@ -1,9 +1,9 @@
 package excsi.gardencloche.common.compat;
 
-import excsi.gardencloche.api.GardenClocheRegistry;
-import excsi.gardencloche.api.handlers.AbstractPlantHandler;
-import excsi.gardencloche.api.handlers.IFertilizerHandler;
-import excsi.gardencloche.api.handlers.SoilTextureWrapper;
+import excsi.gardencloche.common.registry.GardenClocheRegistry;
+import excsi.gardencloche.common.handlers.AbstractPlantHandler;
+import excsi.gardencloche.common.handlers.IFertilizerHandler;
+import excsi.gardencloche.common.handlers.SoilTextureWrapper;
 import minetweaker.IUndoableAction;
 import minetweaker.MineTweakerAPI;
 import minetweaker.api.item.IItemStack;

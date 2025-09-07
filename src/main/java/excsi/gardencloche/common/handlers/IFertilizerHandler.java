@@ -1,4 +1,4 @@
-package excsi.gardencloche.api.handlers;
+package excsi.gardencloche.common.handlers;
 
 import net.minecraft.item.ItemStack;
 

@@ -16,7 +16,7 @@ buildscript {
 apply plugin: 'forge'
 apply plugin: 'java'
 
-version = "1.0[BETA]"
+version = "1.0"
 group= "excsi.gardencloche" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "GardenClocheBackport"
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -50,8 +50,4 @@ processResources
     from(sourceSets.main.resources.srcDirs) {
         exclude 'mcmod.info'
     }
-}
-jar {
-    //duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    //from zipTree('libs/immersive.jar')
 }

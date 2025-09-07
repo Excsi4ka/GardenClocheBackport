@@ -1,6 +1,5 @@
 package excsi.gardencloche.common;
 
-import blusunrize.immersiveengineering.api.ComparableItemStack;
 import blusunrize.immersiveengineering.common.IEContent;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -10,7 +9,7 @@ import cpw.mods.fml.common.network.IGuiHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.registry.GameRegistry;
 import excsi.gardencloche.GardenCloche;
-import excsi.gardencloche.api.GardenClocheRegistry;
+import excsi.gardencloche.common.registry.GardenClocheRegistry;
 import excsi.gardencloche.common.block.BlockGardenCloche;
 import excsi.gardencloche.common.compat.MineTweakerHelper;
 import excsi.gardencloche.common.container.ContainerGardenCloche;
@@ -56,7 +55,7 @@ public class CommonProxy implements IGuiHandler {
         GardenClocheRegistry.mapSoilToTexture("soulsandTex",new ItemStack(Item.getItemFromBlock(Blocks.soul_sand)), new ResourceLocation("textures/blocks/soul_sand.png"));
         GardenClocheRegistry.mapSoilToTexture("waterTex",new ItemStack(Items.water_bucket), new ResourceLocation("gardencloche:textures/blocks/water.png"));
 
-        GardenClocheRegistry.registerBasicFertilizer(new ItemStack(Items.dye,1,15),0.25f);
+        GardenClocheRegistry.registerBasicFertilizer(new ItemStack(Items.dye,1,15),20.25f);
 
         GardenClocheRegistry.registerDefaultCropHandler("wheatHandler",new ItemStack(Items.wheat_seeds),new ItemStack(Item.getItemFromBlock(Blocks.dirt)),
                 new ItemStack[]{new ItemStack(Items.wheat,2),new ItemStack(Items.wheat_seeds)},

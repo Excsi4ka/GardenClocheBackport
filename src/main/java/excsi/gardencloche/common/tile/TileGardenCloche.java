@@ -6,10 +6,10 @@ import cofh.api.energy.EnergyStorage;
 import cofh.api.energy.IEnergyReceiver;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import excsi.gardencloche.api.GardenClocheRegistry;
-import excsi.gardencloche.api.handlers.AbstractPlantHandler;
-import excsi.gardencloche.api.handlers.IFertilizerHandler;
-import excsi.gardencloche.api.handlers.SoilTextureWrapper;
+import excsi.gardencloche.common.registry.GardenClocheRegistry;
+import excsi.gardencloche.common.handlers.AbstractPlantHandler;
+import excsi.gardencloche.common.handlers.IFertilizerHandler;
+import excsi.gardencloche.common.handlers.SoilTextureWrapper;
 import excsi.gardencloche.common.Config;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -51,103 +51,149 @@ public class TileGardenCloche extends TileEntityIEBase implements IEnergyReceive
 
     @Override
     public void updateEntity() {
-        if(this.isDummy)
-            return;
+        if (this.isDummy) return;
+
         boolean needsSync = false;
         boolean consume = false;
 
-        if(currentHandler == null || !currentHandler.isValidSeed(inventory[1])) {
-            currentHandler = GardenClocheRegistry.getPlantHandlerFromStack(inventory[1]);
-        }
+        updateCurrentHandler();
+        updateCurrentSoilTexture();
 
-        if(currentTextureWrapper == null || !currentTextureWrapper.matches(inventory[2])) {
-            currentTextureWrapper = GardenClocheRegistry.getSoilTextureFromStack(inventory[2]);
-        }
-
-        if(currentHandler == null)
-            return;
+        if (currentHandler == null) return;
 
         currentHandler.tick(this);
 
-        if(worldObj.isRemote) {
-            if(energyStorage.getEnergyStored()>Config.clocheEnergyConsumption && fertilizerAmount>0) {
-                if (worldObj.rand.nextInt(8) == 0) {
-                    double partX = xCoord + 0.5;
-                    double partY = yCoord + 2.6875;
-                    double partZ = zCoord + 0.5;
-                    worldObj.spawnParticle("reddust", partX, partY, partZ, 0, 0, 0);
-                }
-            }
-        }else {
-            if(fertilizerAmount<=0 && tank.getFluidAmount() >= Config.clocheFluidConsumption) {
-                tank.drain(Config.clocheFluidConsumption,true);
-                needsSync = true;
-                if(inventory[0] != null && GardenClocheRegistry.isValidFertilizer(inventory[0])) {
-                    IFertilizerHandler fertilizerHandler = GardenClocheRegistry.getFertilizerHandlerFromStack(inventory[0]);
-                    fertilizerBoost = fertilizerHandler.getGrowthMultiplier();
-                    inventory[0].stackSize--;
-                    if(inventory[0].stackSize<=0) {
-                        inventory[0] = null;
-                    }
-                }
-                fertilizerAmount = Config.fertilizerAmount;
-            }
-            if(currentHandler.isValidSoil(inventory[2]) && energyStorage.extractEnergy(Config.clocheEnergyConsumption,true) == Config.clocheEnergyConsumption && fertilizerAmount > 0) {
-                if(growth>=1 && !outputSlotsFull()) {
-                    ItemStack[] outputs = currentHandler.getOutputs(this,inventory[0]);
-                    for (int j = 0; j < outputs.length; j++) {
-                        for(int i = 3; i < 7; i++) {
-                            if(inventory[i] == null) {
-                                inventory[i] = outputs[j];
-                                outputs[j] = null;
-                            } else {
-                                ItemStack invStack = inventory[i];
-                                if(OreDictionary.itemMatches(invStack,outputs[j],true)) {
-                                    int newSize = invStack.stackSize+outputs[j].stackSize;
-                                    if(newSize>64) {
-                                        inventory[i].stackSize = 64;
-                                        outputs[j].stackSize = newSize-64;
-                                    }else {
-                                        inventory[i].stackSize = newSize;
-                                        outputs[j] = null;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    growth = 0;
-                }else {
-                    if(!outputSlotsFull()) {
-                        growth = currentHandler.getGrowthStep(this, fertilizerBoost, growth);
-                        consume = true;
-                        needsSync = true;
-                    }
-                }
-            }
-            if (worldObj.getTotalWorldTime() % 8L == 0L) {
-                ForgeDirection dir = ForgeDirection.getOrientation(facingSide);
-                TileEntity inventoryFront = this.worldObj.getTileEntity(xCoord+dir.offsetX,yCoord+1,zCoord+dir.offsetZ);
+        if (worldObj.isRemote) {
+            spawnParticle();
+            return;
+        }
 
-                ItemStack stack;
-                for (int j = 3; j < 7; ++j) {
-                    if (this.getStackInSlot(j) != null) {
-                        stack = Utils.copyStackWithAmount(this.getStackInSlot(j), 1);
-                        if (inventoryFront instanceof ISidedInventory && ((ISidedInventory) inventoryFront).getAccessibleSlotsFromSide(ForgeDirection.OPPOSITES[facingSide]).length > 0 || inventoryFront instanceof IInventory && ((IInventory) inventoryFront).getSizeInventory() > 0) {
-                            stack = Utils.insertStackIntoInventory((IInventory) inventoryFront, stack, ForgeDirection.OPPOSITES[facingSide]);
-                        }
-                        if (stack == null) {
-                            this.decrStackSize(j, 1);
-                            break;
-                        }
+        if (fertilizerAmount <= 0 && tank.getFluidAmount() >= Config.clocheFluidConsumption) {
+            consumeFertilizer();
+            needsSync = true;
+        }
+
+        if (canGrow()) {
+            if (growth >= 1 && !outputSlotsFull()) {
+                handleHarvest();
+                growth = 0;
+            } else if (!outputSlotsFull()) {
+                growth = currentHandler.getGrowthStep(this, fertilizerBoost, growth);
+                consume = true;
+                needsSync = true;
+            }
+        }
+
+        if (worldObj.getTotalWorldTime() % 8L == 0L) {
+            ejectItems();
+        }
+
+        if (consume) {
+            fertilizerAmount--;
+            energyStorage.extractEnergy(Config.clocheEnergyConsumption, false);
+        }
+
+        if (needsSync) {
+            worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
+        }
+    }
+
+    private void updateCurrentHandler() {
+        if (currentHandler == null || !currentHandler.isValidSeed(inventory[1])) {
+            currentHandler = GardenClocheRegistry.getPlantHandlerFromStack(inventory[1]);
+        }
+    }
+
+    private void updateCurrentSoilTexture() {
+        if (currentTextureWrapper == null || !currentTextureWrapper.matches(inventory[2])) {
+            currentTextureWrapper = GardenClocheRegistry.getSoilTextureFromStack(inventory[2]);
+        }
+    }
+
+    private void spawnParticle() {
+        if (energyStorage.getEnergyStored() > Config.clocheEnergyConsumption && fertilizerAmount > 0) {
+            if (worldObj.rand.nextInt(8) == 0) {
+                double x = xCoord + 0.5;
+                double y = yCoord + 2.6875;
+                double z = zCoord + 0.5;
+                worldObj.spawnParticle("reddust", x, y, z, 0, 0, 0);
+            }
+        }
+    }
+
+    private void consumeFertilizer() {
+        tank.drain(Config.clocheFluidConsumption, true);
+        IFertilizerHandler fertilizerHandler = GardenClocheRegistry.getFertilizerHandlerFromStack(inventory[0]);
+        if (fertilizerHandler != null) {
+            fertilizerBoost = fertilizerHandler.getGrowthMultiplier();
+            inventory[0].stackSize--;
+            if (inventory[0].stackSize <= 0) {
+                inventory[0] = null;
+            }
+        } else {
+            fertilizerBoost = 1;
+        }
+
+        fertilizerAmount = Config.fertilizerAmount;
+    }
+
+    private boolean canGrow() {
+        return currentHandler.isValidSoil(inventory[2])
+                && energyStorage.extractEnergy(Config.clocheEnergyConsumption, true) == Config.clocheEnergyConsumption
+                && fertilizerAmount > 0;
+    }
+
+    private void handleHarvest() {
+        ItemStack[] outputs = currentHandler.getOutputs(this, inventory[0]);
+        for (ItemStack output : outputs) {
+            if (output != null) {
+                insertOutputs(output);
+            }
+        }
+    }
+
+    private void insertOutputs(ItemStack stack) {
+        for (int i = 3; i < 7; i++) {
+            if (inventory[i] == null) {
+                inventory[i] = stack;
+                stack = null;
+            } else {
+                ItemStack invStack = inventory[i];
+                if (OreDictionary.itemMatches(invStack, stack, true)) {
+                    int newSize = invStack.stackSize + stack.stackSize;
+                    if (newSize > 64) {
+                        inventory[i].stackSize = 64;
+                        stack.stackSize = newSize - 64;
+                    } else {
+                        inventory[i].stackSize = newSize;
+                        stack = null;
                     }
                 }
             }
-            if(consume) {
-                fertilizerAmount--;
-                energyStorage.extractEnergy(Config.clocheEnergyConsumption,false);
-            }
-            if(needsSync) {
-                worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
+        }
+    }
+
+    private void ejectItems() {
+        ForgeDirection dir = ForgeDirection.getOrientation(facingSide);
+        TileEntity front = worldObj.getTileEntity(xCoord + dir.offsetX, yCoord + 1, zCoord + dir.offsetZ);
+
+        for (int j = 3; j < 7; j++) {
+            if (inventory[j] != null) {
+                ItemStack stack = Utils.copyStackWithAmount(inventory[j], 1);
+
+                if (front instanceof ISidedInventory) {
+                    int[] slots = ((ISidedInventory) front).getAccessibleSlotsFromSide(ForgeDirection.OPPOSITES[facingSide]);
+                    if (slots.length > 0) {
+                        stack = Utils.insertStackIntoInventory((IInventory) front, stack, ForgeDirection.OPPOSITES[facingSide]);
+                    }
+                } else if (front instanceof IInventory && ((IInventory) front).getSizeInventory() > 0) {
+                    stack = Utils.insertStackIntoInventory((IInventory) front, stack, ForgeDirection.OPPOSITES[facingSide]);
+                }
+
+                if (stack == null) {
+                    this.decrStackSize(j, 1);
+                    break;
+                }
             }
         }
     }

@@ -1,6 +1,6 @@
-package excsi.gardencloche.api;
+package excsi.gardencloche.common.registry;
 
-import excsi.gardencloche.api.handlers.*;
+import excsi.gardencloche.common.handlers.*;
 import excsi.gardencloche.common.registry.*;
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemStack;

@@ -2,7 +2,7 @@ package excsi.gardencloche.common.registry;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import excsi.gardencloche.api.handlers.AbstractPlantHandler;
+import excsi.gardencloche.common.handlers.AbstractPlantHandler;
 import excsi.gardencloche.common.tile.TileGardenCloche;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderBlocks;

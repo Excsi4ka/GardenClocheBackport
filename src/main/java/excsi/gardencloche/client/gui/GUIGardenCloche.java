@@ -30,8 +30,10 @@ public class GUIGardenCloche extends GuiContainer {
             tooltip.add(this.tile.energyStorage.getEnergyStored() + "/" + this.tile.energyStorage.getMaxEnergyStored() + " RF");
         }
         if (mx > this.guiLeft + 29 && mx < this.guiLeft + 37 && my > this.guiTop + 22 && my < this.guiTop + 68) {
-            tooltip.add(StatCollector.translateToLocal("cloche.amount")+" "+String.format("%.2f", (double)this.tile.fertilizerAmount/Config.fertilizerAmount));
-            tooltip.add(StatCollector.translateToLocal("cloche.boost")+" "+this.tile.fertilizerBoost);
+            tooltip.add(StatCollector.translateToLocal("cloche.amount")+" "
+                    +String.format("%.0f", ((double)this.tile.fertilizerAmount/Config.fertilizerAmount)*100d)
+                    +"%");
+            tooltip.add(StatCollector.translateToLocal("cloche.boost")+" x"+this.tile.fertilizerBoost);
         }
         if (!tooltip.isEmpty()) {
             ClientUtils.drawHoveringText(tooltip, mx, my, this.fontRendererObj, this.guiLeft + this.xSize, -1);
